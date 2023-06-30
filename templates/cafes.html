@@ -1,0 +1,62 @@
+{% extends 'bootstrap/base.html' %}
+{% block styles %}
+{{super()}}
+<link rel="stylesheet"
+      href="{{url_for('static', filename='css/styles.css')}}">
+{% endblock %}
+{% block title %}Restaurants{% endblock %}
+
+{% block content %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-12">
+
+      <h1>All Cafes</h1>
+      <a class="btn btn-info btn-lg" href="{{url_for('new_cafe')}}" role="button">Add A Cafe</a>
+
+	  <table class="table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Map URL</th>
+            <th scope="col">Image URL</th>
+            <th scope="col">Location</th>
+            <th scope="col">Power Outlets?</th>
+            <th scope="col">Bathroom?</th>
+            <th scope="col">Wifi?</th>
+            <th scope="col">Can Take Calls?</th>
+            <th scope="col">Seats</th>
+            <th scope="col">Coffee Price</th>
+            <th scope="col">Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cafe in cafes %}
+            <tr>
+              <th scope="row">{{cafe.name}}</th>
+              <td><a href="{{cafe.map_url}}">Maps Link</a></td>
+              <td><a href="{{cafe.img_url}}">Image</a></td>
+              <td>{{cafe.location}}</td>
+              <td>{{cafe.seats}}</td>
+              <td>{{cafe.has_toilet}}</td>
+              <td>{{cafe.has_wifi}}</td>
+              <td>{{cafe.has_sockets}}</td>
+              <td>{{cafe.can_take_calls}}</td>
+              <td>{{cafe.coffee_price}}</td>
+              <td><a class="btn btn-danger btn-sm" href="{{url_for('remove', cafe_id = cafe.id)}}" role="button">Delete</a></td>
+            </tr>
+          {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+  	  </table>
+
+      <p><a href="{{url_for('home')}}">Return to index page</a></p>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

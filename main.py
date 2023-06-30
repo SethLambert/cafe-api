@@ -1,6 +1,10 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
+from flask_bootstrap import Bootstrap
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, SelectField, BooleanField
+from wtforms.validators import DataRequired, URL
 import random
 
 app = Flask(__name__)
@@ -8,6 +12,8 @@ app = Flask(__name__)
 ##Connect to Database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cafes.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+Bootstrap(app)
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -33,10 +39,33 @@ class Cafe(db.Model):
 
 with app.app_context():
     db.create_all()
+    
+#create form
+class CafeForm(FlaskForm):
+    name = StringField('Cafe Name', validators=[DataRequired()])
+    map_url = StringField('Cafe Location (Google Maps URL)', validators=[DataRequired(), URL()])
+    img_url = StringField('Image URL', validators=[DataRequired(), URL()])
+    location = StringField('Location', validators=[DataRequired()])
+    seats = StringField('Number Of Seats', validators=[DataRequired()])
+    has_toilet = BooleanField('Bathroom Available', validators=[DataRequired()])
+    has_wifi = BooleanField('WiFi Available', validators=[DataRequired()])
+    has_sockets = BooleanField('Power Outlets', validators=[DataRequired()])
+    can_take_calls = BooleanField('Phone Call ', validators=[DataRequired()])
+    coffee_price = StringField('Coffee Price', validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route('/cafes')
+def cafes():
+    cafes = db.session.query(Cafe).all()
+    list_of_rows = []
+    for row in cafes:
+        list_of_rows.append(row)
+    return render_template('cafes.html', cafes=list_of_rows)
+
 
 ## HTTP GET - Read Record
 @app.route("/random", methods=["GET"])
@@ -61,9 +90,44 @@ def get_cafe_by_location():
     else:
         return jsonify({"error": {"Not Found": "We do not have a record at that location."}})
 
+@app.route("/new", methods=["GET", "POST"])
+def new_cafe():
+    form = CafeForm()
+    cafe_to_add = Cafe(
+        name = request.form.get('name'), 
+        map_url = request.form.get('map_url'), 
+        img_url = request.form.get('img_url'), 
+        location = request.form.get('location'), 
+        seats = request.form.get('seats'), 
+        has_toilet = bool(request.form.get('has_toilet')), 
+        has_wifi = bool(request.form.get('has_wifi')), 
+        has_sockets = bool(request.form.get('has_sockets')), 
+        can_take_calls = bool(request.form.get('can_take_calls')), 
+        coffee_price = request.form.get('coffee_price')
+    )
+    try:
+        db.session.add(cafe_to_add)
+        db.session.commit()
+        print(cafe_to_add.to_dict())
+        return redirect(url_for('cafes'))
+    except exc.IntegrityError:
+        print('No')
+        render_template('add.html', form=form, error = "Something went wrong.")   
+    return render_template('add.html', form=form, error = None)
+
+@app.route("/cafes/remove/<int:cafe_id>", methods=["GET", "POST"])
+def remove(cafe_id):
+    print(cafe_id)
+    with app.app_context():
+        cafe = Cafe.query.get(cafe_id)
+    if cafe:
+        with app.app_context():
+            db.session.delete(cafe)
+            db.session.commit()
+    return redirect(url_for('cafes'))
 
 ## HTTP POST - Create Record
-@app.route("/add", methods=["POST"])
+@app.route("/add", methods=["GET", "POST"])
 def add_a_cafe():
     cafe_to_add = Cafe(
         name = request.form.get('name'), 
